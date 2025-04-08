@@ -4,14 +4,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 from collections import deque
 
-BUFFER_SIZE = 40000
+BUFFER_SIZE = 10000
 
-serial = Serial('COM6', 115200)
+serial = Serial('COM6', 912600)
 
 header = b'\xe0\x10'
 footer = b'\xf0\x10'
 
-TSETING_SIZE = 20000
+TSETING_SIZE = 5000
 
 plt.ion()
 fig, ax = plt.subplots()
@@ -30,7 +30,8 @@ def align_and_get_data(ser: Serial):
     Returns:
         data (bytes): Data received from the serial device
     """
-    while ser.read_until(header)[-2:] != header:
+    dd = ser.read_until(header)[-2:]
+    while dd != header:
         print("Waiting for header")
         pass
     
@@ -44,6 +45,7 @@ def align_and_get_data(ser: Serial):
     # return ser.read(BUFFER_SIZE)
 
 try:
+    print("GG")
     while True:
 
         values = np.frombuffer(align_and_get_data(serial), dtype=np.uint8)

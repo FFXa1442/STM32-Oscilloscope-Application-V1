@@ -19,13 +19,18 @@ ADC_CLOCK = 20_000_000  # ADC時鐘頻率
 SAMPLE_RATE = ADC_CLOCK / 20   # 採樣率
 OBJECT_NAME = '100kHz'
 RANGE = int(SAMPLE_RATE / 2)               # 頻域顯示範圍
+# RANGE = 200_000               # 頻域顯示範圍
+ENABLE_NORMALIZATION = True  # 是否啟用歸一化
+# RANGE = 1000               # 頻域顯示範圍
 header = b'\xAA\x55'         # 幀頭
 footer = b'\x5A\xA5'         # 幀尾
 
 # 數據存儲配置
-SAVE_DIRECTORY = "captured_data"
-if not os.path.exists(SAVE_DIRECTORY):
-    os.makedirs(SAVE_DIRECTORY)
+SAVE_DIRECTORY = "captured_data_pastic_drinking_straw_collection_3"
+
+def directory_init():
+    if not os.path.exists(SAVE_DIRECTORY):
+        os.makedirs(SAVE_DIRECTORY)
 
 # 建立串口連接
 ser = serial.Serial('COM3', 921600, timeout=1)
@@ -40,26 +45,33 @@ fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8))
 fig.tight_layout(pad=3.0)
 
 # 設置時域圖表
-ax1.set_title('Time Domain')
+ax1.set_title(f'Time Domain{' (Normalization)' if ENABLE_NORMALIZATION else ''}')
 # ax1.set_xlabel('Sample Number')
-ax1.set_xlabel('Time (s)')
+ax1.set_xlabel('Time (ms)')
 ax1.set_ylabel('Voltage (V)')
-ax1.set_ylim(-1.7, 1.7)
+if ENABLE_NORMALIZATION:
+    ax1.set_ylim(-1.1, 1.1)
+else:
+    ax1.set_ylim(-5, 5)
 ax1.grid(True, alpha=0.3)
 time_line, = ax1.plot([], [], 'c-', linewidth=1)
 
 # 設置頻域圖表
-ax2.set_title('Frequency Domain')
-ax2.set_xlabel('Frequency (Hz)')
+ax2.set_title(f'Frequency Domain{' (Normalization)' if ENABLE_NORMALIZATION else ''}')
+ax2.set_xlabel('Frequency (kHz)')
 ax2.set_ylabel('Amplitude')
-ax2.set_ylim(0, 1200)
+if ENABLE_NORMALIZATION:
+    ax2.set_ylim(-0, 1.1)
+else:
+    ax2.set_ylim(0, 1200)
 ax2.grid(True, alpha=0.3)
 freq_line, = ax2.plot([], [], 'r-', linewidth=1)
 
 # 創建x軸數據
 # time_x = np.arange(SAMPLE_SIZE)
-time_x = np.linspace(0, SAMPLE_SIZE/SAMPLE_RATE, SAMPLE_SIZE)
-freq_x = np.fft.rfftfreq(SAMPLE_SIZE, 1/SAMPLE_RATE)[:RANGE]
+time_x = np.linspace(0, SAMPLE_SIZE/SAMPLE_RATE, SAMPLE_SIZE) * 1000
+freq_x = np.fft.rfftfreq(SAMPLE_SIZE, 1/SAMPLE_RATE)[:RANGE] / 1000
+
 
 # 初始化y軸數據
 time_y = np.zeros(SAMPLE_SIZE)
@@ -226,8 +238,8 @@ def init():
     time_line.set_data(time_x, time_y)
     freq_line.set_data(freq_x, freq_y)
     # ax1.set_xlim(0, SAMPLE_SIZE)
-    ax1.set_xlim(0, SAMPLE_SIZE/SAMPLE_RATE)
-    ax2.set_xlim(0, RANGE)
+    ax1.set_xlim(0, (SAMPLE_SIZE/SAMPLE_RATE) * 1000)
+    ax2.set_xlim(0, RANGE / 1000)
     return time_line, freq_line
 
 def update(frame):
@@ -235,6 +247,8 @@ def update(frame):
     
     try:
         # 使用當前的time_y數據更新圖表
+        if ENABLE_NORMALIZATION:
+            time_y = time_y / np.max(np.abs(time_y))
         time_line.set_data(time_x, time_y)
         
         # 計算FFT
@@ -244,6 +258,9 @@ def update(frame):
         # 計算幅度譜
         freq_y = np.abs(fft_data)
         
+        if ENABLE_NORMALIZATION:
+            freq_y = freq_y / np.max(np.abs(freq_y))
+
         # 更新頻域圖
         freq_line.set_data(freq_x, freq_y)
         
@@ -273,6 +290,8 @@ save_button.label.set_color('white')
 def toggle_save_data(event):
     global save_data_enabled
     save_data_enabled = not save_data_enabled
+    if save_data_enabled:
+        directory_init()  # 初始化保存目錄
     save_button.label.set_text(f"{'Stop' if save_data_enabled else 'Start'} Save Data")
     print(f"Data Save {'Enabled' if save_data_enabled else 'Disabled'}")
 

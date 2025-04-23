@@ -17,7 +17,7 @@ import time
 SAMPLE_SIZE = 5000            # 採樣點數
 ADC_CLOCK = 20_000_000  # ADC時鐘頻率
 SAMPLE_RATE = ADC_CLOCK / 20   # 採樣率
-OBJECT_NAME = '100kHz'
+OBJECT_NAME = 'chopsticks_cycle'
 RANGE = int(SAMPLE_RATE / 2)               # 頻域顯示範圍
 # RANGE = 200_000               # 頻域顯示範圍
 ENABLE_NORMALIZATION = True  # 是否啟用歸一化
@@ -26,7 +26,7 @@ header = b'\xAA\x55'         # 幀頭
 footer = b'\x5A\xA5'         # 幀尾
 
 # 數據存儲配置
-SAVE_DIRECTORY = "captured_data_pastic_drinking_straw_collection_3"
+SAVE_DIRECTORY = f"20250423/captured_data_{OBJECT_NAME}_collection"
 
 def directory_init():
     if not os.path.exists(SAVE_DIRECTORY):

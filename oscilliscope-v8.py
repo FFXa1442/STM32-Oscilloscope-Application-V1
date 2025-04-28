@@ -12,7 +12,7 @@ import time
 from matplotlib.widgets import TextBox
 
 # 配置參數
-PORT = 'COM6'  # 串口號
+PORT = 'COM3'  # 串口號
 BAUDRATE = 921600  # 波特率
 SAMPLE_SIZE = 5000            # 採樣點數
 VOLTAGE_REF = 3.3 * 2  # 參考電壓
@@ -20,11 +20,12 @@ RESOLUTION = 4095  # ADC分辨率
 ADC_CLOCK = 20_000_000  # ADC時鐘頻率
 SAMPLE_RATE = ADC_CLOCK / 20   # 採樣率
 RANGE = int(SAMPLE_RATE / 2)               # 頻域顯示範圍
+FREQ_DOMAIN_MAX_ENERGY = 1000  # 頻域最大能量值
 # RANGE = 50_000               # 頻域顯示範圍
 ENABLE_TIME_DOMAIN_NORMALIZATION = False  # 是否啟用時域歸一化
 
 # 頻域顯示選項（簡化，只允許一種模式啟用）
-FREQ_MODE = 'db'  # 'normal', 'db', 'db_norm'
+FREQ_MODE = None  # 'normal', 'db', 'db_norm'
 
 header = b'\xAA\x55'         # 幀頭
 footer = b'\x5A\xA5'         # 幀尾
@@ -74,7 +75,7 @@ ax1.set_title(f'Time Domain{' (Normalization)' if ENABLE_TIME_DOMAIN_NORMALIZATI
 ax1.set_xlabel('Time (ms)')
 ax1.set_ylabel('Voltage (V)')
 
-ax1_ylim = { 'bottom': -1.1, 'top': 1.1, } if ENABLE_TIME_DOMAIN_NORMALIZATION else { 'bottom': -3.5, 'top': 3.5, }
+ax1_ylim = { 'bottom': -1.1, 'top': 1.1, } if ENABLE_TIME_DOMAIN_NORMALIZATION else { 'bottom': -VOLTAGE_REF, 'top': VOLTAGE_REF, }
 ax1.set_ylim(**ax1_ylim)
 
 ax1.grid(True, alpha=0.3)
@@ -88,7 +89,7 @@ if FREQ_MODE == 'normal':
 elif FREQ_MODE == 'db':
     ax2.set_title('Frequency Domain')
     ax2.set_ylabel('Energy (dB)')
-    ax2.set_ylim(np.floor(unit_to_dB(0)), np.ceil(unit_to_dB(5000)))
+    ax2.set_ylim(np.floor(unit_to_dB(0)), np.ceil(unit_to_dB(FREQ_DOMAIN_MAX_ENERGY)))
 elif FREQ_MODE == 'db_norm':
     ax2.set_title('Frequency Domain (Normalization)')
     ax2.set_ylabel('Energy (dB)')
@@ -96,7 +97,7 @@ elif FREQ_MODE == 'db_norm':
 else:
     ax2.set_title('Frequency Domain')
     ax2.set_ylabel('Energy')
-    ax2.set_ylim(-1, 5000)
+    ax2.set_ylim(-1, FREQ_DOMAIN_MAX_ENERGY)
 
 ax2.set_xlabel('Frequency (kHz)')
 ax2.grid(True, alpha=0.3)
@@ -185,6 +186,7 @@ def data_acquisition_thread():
     while is_running:
         try:
             if stm32.in_waiting > 0 or True:
+                
                 # 每次都先發送啟動ID
                 send_start_id(stm32)
                 # 嘗試讀取一個完整數據幀
@@ -215,7 +217,7 @@ def data_acquisition_thread():
             traceback.print_exc()
             
         # 短暫休眠以避免CPU過度使用
-        time.sleep(0.001)
+        time.sleep(1 / 1000)
 
 # 數據保存線程
 def data_saving_thread():

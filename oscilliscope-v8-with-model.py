@@ -1,16 +1,18 @@
-import serial
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
+import csv
+import os
+import queue
 import struct
 import threading
-import queue
-import os
-import csv
-from datetime import datetime
 import time
+from datetime import datetime
+
+import matplotlib.pyplot as plt
+import numpy as np
+import serial
+import tensorflow as tf
+from matplotlib.animation import FuncAnimation
 from matplotlib.widgets import TextBox
-from keras.src import models, layers, regularizers
+from tensorflow.keras import layers, models
 
 # 配置參數
 PORT = 'COM6'  # 串口號

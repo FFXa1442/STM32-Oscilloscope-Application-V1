@@ -74,6 +74,12 @@ def detection_model():
     o = layers.Dense(3, activation='softmax')(o)
     return models.Model(inputs=i, outputs=o)
 
+def signal_normalization(data):
+    signal = data / RESOLUTION
+    signal = signal - np.mean(signal)
+    signal = signal / np.max(np.abs(signal))
+    return signal
+
 stm32 = serial.Serial(PORT, BAUDRATE, timeout=1)
 print(f"串口已打開: {stm32.name}")
 
@@ -234,7 +240,7 @@ def data_acquisition_thread():
                         display_queue.put(data_centered)
                     
                     if not freq_recog_queue.full():
-                        freq_feat = np.abs(np.fft.rfft(data_centered, n=511))
+                        freq_feat = np.abs(np.fft.rfft(signal_normalization(data), n=511))
                         # freq_feat = freq_feat[:256]
                         freq_recog_queue.put(freq_feat)
                         
